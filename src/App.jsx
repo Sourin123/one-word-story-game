@@ -42,13 +42,16 @@ const DEFAULT_FIREBASE_CONFIG = {
 let db = null;
 let auth = null;
 const isFirebaseConfigured = DEFAULT_FIREBASE_CONFIG.apiKey !== "YOUR_FIREBASE_API_KEY";
+// Provider API keys are never bundled into the browser build. Shared keys live in
+// Netlify environment variables and are used by the /api/ai server function.
+// Players may still enter their own keys in the Free AI Router dialog (stored locally).
 const LLM_ENV_CONFIG = {
-  geminiKey: import.meta.env.VITE_GEMINI_API_KEY || '',
-  geminiModel: import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash',
-  groqKey: import.meta.env.VITE_GROQ_API_KEY || '',
-  grokKey: import.meta.env.VITE_GROK_API_KEY || '',
-  openRouterKey: import.meta.env.VITE_OPENROUTER_API_KEY || '',
-  openRouterModel: import.meta.env.VITE_OPENROUTER_MODEL || 'nvidia/nemotron-3-nano-30b-a3b:free'
+  geminiKey: '',
+  geminiModel: 'gemini-2.5-flash',
+  groqKey: '',
+  grokKey: '',
+  openRouterKey: '',
+  openRouterModel: 'nvidia/nemotron-3-nano-30b-a3b:free'
 };
 
 function getFirebaseErrorMessage(error, action) {
