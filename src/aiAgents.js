@@ -165,7 +165,30 @@ export async function callFreeAI(systemPrompt, userPrompt, aiSettings, timeoutMs
       }
     }
 
-    // 2. Grok (xAI)
+    // 2. Server-side proxy (uses provider keys stored as Netlify environment variables)
+    if (!aiSettings.openRouterKey) {
+      try {
+        const response = await fetch('/api/ai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ systemPrompt, userPrompt }),
+          signal: controller.signal
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data?.text) return data.text.trim();
+          if (data?.error && !data.error.startsWith('No server AI provider')) {
+            lastFailure = `Server AI: ${data.error}`;
+            configuredProviderFailure = lastFailure;
+          }
+        }
+      } catch (error) {
+        if (error?.name === 'AbortError') throw error;
+        // Proxy unavailable (e.g. plain `vite` dev server); continue with other providers.
+      }
+    }
+
+    // 3. Grok (xAI)
     if (aiSettings.grokKey && !aiSettings.openRouterKey) {
       const response = await fetch('https://api.x.ai/v1/chat/completions', {
         method: 'POST',
@@ -192,14 +215,14 @@ export async function callFreeAI(systemPrompt, userPrompt, aiSettings, timeoutMs
       } else lastFailure = `Grok returned HTTP ${response.status}. Check its API key and model access.`;
     }
 
-    // 3. Gemini
+    // 4. Gemini
     if (aiSettings.geminiKey && !aiSettings.openRouterKey) {
       const model = aiSettings.geminiModel || 'gemini-1.5-flash';
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${aiSettings.geminiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': aiSettings.geminiKey },
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: systemPrompt }] },
             contents: [{ parts: [{ text: userPrompt }] }],
@@ -216,7 +239,7 @@ export async function callFreeAI(systemPrompt, userPrompt, aiSettings, timeoutMs
       } else lastFailure = `Gemini returned HTTP ${response.status}. Check its API key and model access.`;
     }
 
-    // 4. Groq
+    // 5. Groq
     if (aiSettings.groqKey && !aiSettings.openRouterKey) {
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
@@ -243,7 +266,7 @@ export async function callFreeAI(systemPrompt, userPrompt, aiSettings, timeoutMs
       } else lastFailure = `Groq returned HTTP ${response.status}. Check its API key and model access.`;
     }
 
-    // 5. Pollinations (No Key Required)
+    // 6. Pollinations (No Key Required)
     if (aiSettings.useZeroKeyCloud !== false) {
       const response = await fetch('https://text.pollinations.ai/openai', {
         method: 'POST',

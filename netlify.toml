@@ -1,0 +1,3 @@
+[build.environment]
+  # Model names are not secrets and legitimately appear in source code defaults.
+  SECRETS_SCAN_OMIT_KEYS = "VITE_GEMINI_MODEL,VITE_OPENROUTER_MODEL,GEMINI_MODEL,OPENROUTER_MODEL"

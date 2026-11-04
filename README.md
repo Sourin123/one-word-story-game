@@ -28,12 +28,13 @@ An improv multiplayer party game where 2-10 players build a hilarious story one 
 3. Open `http://localhost:5173` in your browser.
 
 ## Configure the NVIDIA AI model
-1. Copy `.env.example` to `.env.local` in the project root (or edit the provided `.env.local`).
-2. Set `VITE_OPENROUTER_API_KEY` to your OpenRouter key and leave `VITE_OPENROUTER_MODEL` as `nvidia/nemotron-3-nano-30b-a3b:free`.
-3. Optionally add provider keys to `VITE_GEMINI_API_KEY` or `VITE_GROQ_API_KEY`.
-4. Restart the Vite dev server after changing `.env.local`. Bot turns and finale direction use OpenRouter first when its key is configured.
+AI provider keys are kept on the server. Bot turns and finale direction call the `/api/ai` Netlify Function, which reads keys from environment variables at runtime, so keys are never embedded in the browser bundle.
 
-`.env.local` is ignored by Git. **Vite variables prefixed with `VITE_` are embedded in the browser bundle and are not secret.** This setup is only suitable for local/private use. Do not deploy a public app with personal API keys in the frontend; use a backend proxy with server-side environment variables for shared hosting. Free model access, rate limits, and model IDs can change on OpenRouter.
+1. In Netlify, open **Project configuration > Environment variables** and set `OPENROUTER_API_KEY` (and optionally `OPENROUTER_MODEL`, default `nvidia/nemotron-3-nano-30b-a3b:free`).
+2. Optionally add `GEMINI_API_KEY` (with `GEMINI_MODEL`), `GROQ_API_KEY`, or `GROK_API_KEY`. The function tries OpenRouter, Grok, Gemini, then Groq.
+3. For local development, put the same variables in `.env` (see `.env.example`) and run `netlify dev` so the function is available.
+
+**Do not use `VITE_`-prefixed names for keys.** Vite embeds `VITE_*` variables into the public JavaScript bundle, which exposes them and causes Netlify's secrets scanning to fail the build. Legacy `VITE_*_API_KEY` variables are still read by the server function, but renaming them is recommended. Players can also paste their own key in the **Free AI Router** dialog; that key stays in their browser's local storage.
 
 ## Troubleshoot online multiplayer
 If the app reports that Firebase sign-in failed, check the error code shown in the message:
